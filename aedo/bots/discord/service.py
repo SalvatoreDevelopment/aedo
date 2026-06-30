@@ -50,6 +50,7 @@ class TurnDTO:
     narration: str
     roll_summary: str | None = None
     outcome: str | None = None
+    genre: str = ""
 
 
 @dataclass
@@ -151,6 +152,7 @@ def run_player_turn(
             narration=result.narration,
             roll_summary=result.resolution.summary if result.resolution else None,
             outcome=result.resolution.outcome.value if result.resolution else None,
+            genre=campaign.blueprint.genre,
         )
         session.commit()
         return dto
