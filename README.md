@@ -1,4 +1,8 @@
-# Aedo 🎭
+<p align="center">
+  <img src="assets/aedo_256.png" width="140" alt="Aedo" />
+</p>
+
+<h1 align="center">Aedo 🎭</h1>
 
 > Un cantastorie AI per avventure di ruolo narrative — su **qualsiasi** genere.
 
