@@ -38,6 +38,20 @@ def test_start_campaign_creates_opening(session: Session):
     assert len(campaign.objectives) == 1
 
 
+def test_start_campaign_auto_titles_when_unnamed(session: Session):
+    campaign, sam = _setup(session)
+    campaign.name = ""  # l'utente non ha dato un nome
+    start_campaign(session, campaign, sam, FakeNarrator())
+    assert campaign.name.strip()       # ora ha un titolo
+    assert "Sam" in campaign.name      # proposto dal narratore
+
+
+def test_start_campaign_keeps_given_name(session: Session):
+    campaign, sam = _setup(session)  # nome = "L'ombra sul molo"
+    start_campaign(session, campaign, sam, FakeNarrator())
+    assert campaign.name == "L'ombra sul molo"  # il nome dato non viene toccato
+
+
 def test_free_action_no_roll(session: Session):
     campaign, sam = _setup(session)
     result = play_turn(session, campaign, sam, "mi guardo intorno nella sala", FakeNarrator())

@@ -68,6 +68,7 @@ def build_opening_messages(ctx: NarratorContext, premise: str = "") -> list[dict
         "Rispondi SOLO con un oggetto JSON:\n"
         "{\n"
         '  "narration": string,  // l\'incipit immersivo\n'
+        '  "title": string,  // un titolo breve ed evocativo per la campagna (2-5 parole)\n'
         '  "new_summary": string,  // 1 frase: dove si trova ora il personaggio\n'
         '  "changes": {\n'
         '    "new_objectives": [{"title": string, "description": string}],\n'

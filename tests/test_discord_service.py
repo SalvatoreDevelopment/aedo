@@ -52,6 +52,16 @@ def test_create_campaign_in_channel(bot_db):
     assert service.is_campaign_channel("ignoto") is False
 
 
+def test_create_campaign_without_name_gets_auto_title(bot_db):
+    dto = service.create_campaign_in_channel(
+        FakeNarrator(),
+        channel_id="cX", guild_id="g1", owner_discord_id="u1",
+        template="noir", campaign_name="", character_name="Sam",
+    )
+    assert dto.campaign_name.strip()           # nome generato, non vuoto
+    assert "Sam" in dto.campaign_name          # dal titolo proposto dal narratore
+
+
 def test_run_turn_in_channel(bot_db):
     _new_campaign()
     dto = service.run_player_turn(

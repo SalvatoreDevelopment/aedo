@@ -47,6 +47,7 @@ class FakeNarrator(NarratorProvider):
             changes=StateChanges(
                 new_objectives=[{"title": "Capire cosa sta succedendo", "description": ""}]
             ),
+            title=f"La storia di {ctx.character_name}",
         )
 
     def assess(self, ctx: NarratorContext) -> Assessment:

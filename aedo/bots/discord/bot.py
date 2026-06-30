@@ -73,16 +73,16 @@ _TEMPLATE_CHOICES = [
 @bot.tree.command(name="nuova-campagna", description="Crea una campagna nel suo canale dedicato")
 @app_commands.describe(
     template="Il genere di partenza",
-    nome="Nome della campagna",
     personaggio="Nome del tuo personaggio",
+    nome="(facoltativo) nome della campagna; se lo lasci vuoto lo sceglie Aedo",
     spunto="(facoltativo) un'idea o tema per l'incipit",
 )
 @app_commands.choices(template=_TEMPLATE_CHOICES)
 async def nuova_campagna(
     interaction: discord.Interaction,
     template: app_commands.Choice[str],
-    nome: str,
     personaggio: str,
+    nome: str = "",
     spunto: str = "",
 ) -> None:
     if interaction.guild is None:
@@ -103,8 +103,9 @@ async def nuova_campagna(
         interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
         guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True),
     }
+    provisional = _slug(nome) if nome.strip() else "nuova-campagna"
     channel = await guild.create_text_channel(
-        name=_slug(nome), category=category, overwrites=overwrites
+        name=provisional, category=category, overwrites=overwrites
     )
 
     try:
@@ -127,9 +128,17 @@ async def nuova_campagna(
         )
         return
 
+    # Se il nome è stato proposto dal narratore, rinomina il canale di conseguenza.
+    if _slug(dto.campaign_name) != provisional:
+        try:
+            await channel.edit(name=_slug(dto.campaign_name))
+        except discord.HTTPException:
+            pass
+
     await channel.send(embed=embeds.opening_embed(dto))
     await interaction.followup.send(
-        f"Campagna creata in {channel.mention} — scrivi lì per giocare.", ephemeral=True
+        f"Campagna «{dto.campaign_name}» creata in {channel.mention} — scrivi lì per giocare.",
+        ephemeral=True,
     )
 
 

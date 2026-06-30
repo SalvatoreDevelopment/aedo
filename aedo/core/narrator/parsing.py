@@ -74,6 +74,7 @@ def _narration_from_dict(data: dict[str, Any]) -> Narration:
         text=str(data.get("narration", "")).strip(),
         new_summary=(str(data["new_summary"]) if data.get("new_summary") else None),
         changes=changes,
+        title=(str(data["title"]).strip() if data.get("title") else None),
     )
 
 

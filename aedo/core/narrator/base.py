@@ -87,6 +87,9 @@ class Narration:
     text: str
     new_summary: str | None = None  # aggiorna la "scena" corrente, se cambiata
     changes: StateChanges = field(default_factory=StateChanges)
+    # Titolo proposto per la campagna (solo nella scena d'apertura, se l'utente
+    # non ne ha dato uno).
+    title: str | None = None
 
 
 class NarratorProvider(ABC):

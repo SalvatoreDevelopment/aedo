@@ -96,6 +96,10 @@ def start_campaign(
     """Genera e salva la scena di apertura. Restituisce l'incipit narrato."""
     ctx = build_context(session, campaign, character, action="")
     narration = narrator.open_scene(ctx, premise)
+    # Se l'utente non ha dato un nome alla campagna, usa il titolo proposto dal
+    # narratore (o un fallback).
+    if not campaign.name.strip():
+        campaign.name = narration.title or f"Avventura di {character.name}"
     apply_changes(session, campaign, character, narration.changes)
     campaign.current_summary = narration.new_summary or narration.text
     event = EventLog(
