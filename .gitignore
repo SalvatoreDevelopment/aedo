@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Ambiente / segreti
+.env
+*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# Modelli embedding scaricati / cache
+.cache/
+models_cache/
+
+# Web (React/Vite)
+node_modules/
+aedo/web/dist/
+aedo/web/.vite/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Riferimento (non versionare il repo clonato di studio)
+reference_llm_RPG/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/

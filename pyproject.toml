@@ -1,0 +1,54 @@
+[project]
+name = "aedo"
+version = "0.1.0"
+description = "Aedo — cantastorie AI per avventure RPG narrative su qualsiasi genere"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    # Core: modelli dati + storage
+    "sqlalchemy>=2.0",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+]
+
+[project.optional-dependencies]
+# Narratore AI (OpenRouter, API OpenAI-compatibile)
+narrator = [
+    "openai>=1.30",
+    "httpx>=0.27",
+]
+# Memoria narrativa (embedding locali; similarità calcolata in Python)
+memory = [
+    "sentence-transformers>=3.0",
+    "numpy>=1.24",
+]
+# Bot Discord
+discord = [
+    "discord.py>=2.4",
+]
+# API web
+api = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+]
+# Sviluppo / test
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["aedo*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
