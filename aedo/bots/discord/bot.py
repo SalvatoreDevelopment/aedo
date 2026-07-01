@@ -99,6 +99,23 @@ async def regia_loop() -> None:
         except discord.HTTPException:
             logger.exception("Invio dell'evento di regia fallito")
 
+    # Canali da cancellare (campagne eliminate dal Banco).
+    try:
+        deletions = await asyncio.to_thread(service.take_channel_deletions)
+    except Exception:
+        logger.exception("Errore nel leggere le cancellazioni di canale")
+        deletions = []
+    for d in deletions:
+        try:
+            channel = bot.get_channel(int(d["channel_id"])) or await bot.fetch_channel(int(d["channel_id"]))
+            await channel.delete(reason="Campagna eliminata dal Banco del Master")
+            await asyncio.to_thread(service.complete_channel_deletion, d["id"], None)
+        except discord.NotFound:
+            # Canale già sparito: consideralo fatto.
+            await asyncio.to_thread(service.complete_channel_deletion, d["id"], None)
+        except discord.HTTPException as exc:
+            await asyncio.to_thread(service.complete_channel_deletion, d["id"], str(exc))
+
 
 @regia_loop.before_loop
 async def _before_regia_loop() -> None:

@@ -21,7 +21,7 @@ from .enums import (
 )
 from .event import EventLog
 from .item import Item
-from .master import MasterCommand, MasterNote
+from .master import ChannelDeletion, MasterCommand, MasterNote
 from .memory import Memory
 from .objective import Objective
 from .relationship import Relationship
@@ -39,6 +39,7 @@ __all__ = [
     "EventLog",
     "MasterCommand",
     "MasterNote",
+    "ChannelDeletion",
     "CampaignMode",
     "CampaignStatus",
     "CommandKind",

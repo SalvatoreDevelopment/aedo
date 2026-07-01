@@ -18,6 +18,7 @@ from aedo.core.services.campaign_service import (
     create_campaign_from_template,
     create_player_character,
 )
+from aedo.core.services import regia
 from aedo.core.services.game_service import play_turn, start_campaign
 from aedo.core.services.regia import RegiaJob, run_pending
 from aedo.storage import SessionLocal
@@ -207,6 +208,21 @@ def take_regia_jobs(narrator: NarratorProvider) -> list[RegiaJob]:
         jobs = run_pending(session, narrator)
         session.commit()
         return jobs
+
+
+def take_channel_deletions() -> list[dict]:
+    """Canali da cancellare (accodati dal Banco quando elimina una campagna)."""
+    with SessionLocal() as session:
+        dels = regia.pending_channel_deletions(session)
+        result = [{"id": d.id, "channel_id": d.channel_id} for d in dels]
+        session.commit()
+        return result
+
+
+def complete_channel_deletion(deletion_id: int, error: str | None = None) -> None:
+    with SessionLocal() as session:
+        regia.mark_channel_deletion(session, deletion_id, error)
+        session.commit()
 
 
 def get_objectives(channel_id: str) -> list[dict] | None:

@@ -134,6 +134,15 @@ def campaign_state(campaign_id: int, session: Session = Depends(read_session)):
         return _campaign_state(session, camp)
 
 
+@router.delete("/campaigns/{campaign_id}")
+def delete_campaign(campaign_id: int, session: Session = Depends(write_session)):
+    """Elimina una campagna e tutto il suo contenuto. Se aveva un canale
+    Discord, ne accoda la cancellazione (la esegue il bot, se acceso)."""
+    with _translate():
+        channel_id = state_ops.delete_campaign(session, campaign_id)
+        return {"deleted": True, "campaign_id": campaign_id, "channel_queued": bool(channel_id)}
+
+
 # =========================================================================
 # Risorse e condizioni
 # =========================================================================

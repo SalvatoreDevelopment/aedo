@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, IdMixin, TimestampMixin
@@ -39,6 +39,26 @@ class MasterCommand(Base, IdMixin, TimestampMixin):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<MasterCommand {self.kind.value} [{self.status.value}]>"
+
+
+class ChannelDeletion(Base, IdMixin, TimestampMixin):
+    """Ordine di cancellare un canale Discord, eseguito dal bot.
+
+    Volutamente SENZA legame con la campagna: viene creato mentre la campagna
+    viene eliminata, quindi deve sopravviverle (un cascade la cancellerebbe
+    insieme alla campagna prima che il bot possa agire). Tiene solo l'id del
+    canale da rimuovere.
+    """
+
+    __tablename__ = "channel_deletions"
+
+    channel_id: Mapped[str] = mapped_column(String(64))
+    status: Mapped[CommandStatus] = mapped_column(default=CommandStatus.PENDING)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    error: Mapped[str] = mapped_column(Text, default="")
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<ChannelDeletion {self.channel_id} [{self.status.value}]>"
 
 
 class MasterNote(Base, IdMixin, TimestampMixin):

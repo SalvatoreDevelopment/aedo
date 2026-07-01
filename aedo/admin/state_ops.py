@@ -18,11 +18,13 @@ rete e riusabile (domani anche da un comando Discord del master).
 
 from __future__ import annotations
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from aedo.core.models import (
+    Blueprint,
     Campaign,
+    ChannelDeletion,
     Character,
     Item,
     Objective,
@@ -365,6 +367,41 @@ def update_character(
         ch.attributes = merged
     session.flush()
     return ch
+
+
+def delete_campaign(session: Session, campaign_id: int) -> str | None:
+    """Elimina una campagna e tutto ciò che le appartiene.
+
+    Le collezioni figlie (personaggi, oggetti, relazioni, obiettivi, ricordi,
+    eventi, comandi e note di regia) spariscono a cascata. Il Blueprint viene
+    rimosso se era di questa sola campagna e non è un template riutilizzabile.
+    Se la campagna aveva un canale Discord, accoda la sua cancellazione (che il
+    bot eseguirà): restituisce l'id del canale, o ``None`` se non ce n'era.
+    """
+    camp = session.get(Campaign, campaign_id)
+    if camp is None:
+        raise NotFound(f"Campagna {campaign_id} inesistente.")
+    channel_id = camp.discord_channel_id
+    blueprint = camp.blueprint
+
+    if channel_id:
+        # Coda separata: deve sopravvivere alla cancellazione della campagna.
+        session.add(ChannelDeletion(channel_id=channel_id))
+
+    session.delete(camp)
+    session.flush()
+
+    if blueprint is not None and not blueprint.is_template:
+        others = session.scalar(
+            select(func.count()).select_from(Campaign).where(
+                Campaign.blueprint_id == blueprint.id
+            )
+        )
+        if not others:
+            session.delete(blueprint)
+            session.flush()
+
+    return channel_id
 
 
 def delete_character(session: Session, campaign_id: int, character_id: int) -> None:
