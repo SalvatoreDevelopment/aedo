@@ -217,6 +217,30 @@ async function loadCampaigns() {
   if (target !== prev) selectCampaign(target);  // carica lo stato solo se cambia
 }
 
+$('#delete-campaign').addEventListener('click', async () => {
+  if (!campaignId) return;
+  const name = (state && state.name) || 'questa campagna';
+  const ok = confirm(
+    `Eliminare DEFINITIVAMENTE «${name}» e tutto il suo contenuto ` +
+    `(personaggio, NPC, diario, ricordi, relazioni, obiettivi)?\n\n` +
+    `Anche il canale Discord verrà cancellato (col bot acceso).\n` +
+    `L'azione è irreversibile.`
+  );
+  if (!ok) return;
+  try {
+    const r = await jf(`/admin/api/campaigns/${campaignId}`, { method: 'DELETE' });
+    toast(r.channel_queued
+      ? 'Campagna eliminata. Il canale Discord sparirà a breve (serve il bot acceso).'
+      : 'Campagna eliminata.');
+    campaignId = null;
+    state = null;
+    lastCampaignsJson = '';   // forza il ricaricamento della lista
+    await loadCampaigns();
+  } catch (err) {
+    toast(err.message, true);
+  }
+});
+
 async function selectCampaign(id) {
   campaignId = id;
   try {

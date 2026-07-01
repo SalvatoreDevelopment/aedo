@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session
 
 from aedo.core.models import (
     Campaign,
+    ChannelDeletion,
     Character,
     CommandKind,
     CommandStatus,
@@ -244,3 +245,25 @@ def run_pending(session: Session, narrator: NarratorProvider) -> list[RegiaJob]:
             jobs.append(job)
     session.flush()
     return jobs
+
+
+# === Cancellazione dei canali (coda indipendente dalla campagna) ===========
+def pending_channel_deletions(session: Session) -> list[ChannelDeletion]:
+    return list(
+        session.scalars(
+            select(ChannelDeletion)
+            .where(ChannelDeletion.status == CommandStatus.PENDING)
+            .order_by(ChannelDeletion.id)
+        ).all()
+    )
+
+
+def mark_channel_deletion(session: Session, deletion_id: int, error: str | None = None) -> None:
+    deletion = session.get(ChannelDeletion, deletion_id)
+    if deletion is None:
+        return
+    deletion.status = CommandStatus.ERROR if error else CommandStatus.DONE
+    deletion.processed_at = utcnow()
+    if error:
+        deletion.error = error
+    session.flush()
