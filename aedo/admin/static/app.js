@@ -207,6 +207,8 @@ async function selectCampaign(id) {
     renderState();
     loadRegia();
     loadBlueprint();
+    renderTools();
+    loadStats();
   } catch (err) {
     toast(err.message, true);
   }
@@ -748,6 +750,114 @@ $('#blueprint-body').addEventListener('click', (e) => {
     const next = blueprint.conflict_types.filter((_, i) => i !== Number(b.dataset.i));
     writeBlueprint({ conflict_types: next });
   }
+});
+
+// ---- Strumenti: oracolo + generatori ----
+const ORACLE_CLASS = { yes: 'ok', yes_but: 'warn', no_but: 'warn', no: 'bad' };
+
+function renderTools() {
+  $('#tools-body').innerHTML = `
+    <div class="mini-label">Oracolo — fai una domanda sì/no</div>
+    <div class="mini-form">
+      <input data-f="oracle-q" placeholder="Es. Il barista sa qualcosa?" style="flex:1" />
+      <select data-f="oracle-like">
+        <option value="unlikely">improbabile</option>
+        <option value="even" selected>50 e 50</option>
+        <option value="likely">probabile</option>
+      </select>
+      <button class="btn-wax" data-act="oracle">Chiedi</button>
+    </div>
+    <div id="oracle-answer"></div>
+
+    <div class="mini-label">Generatori (dal genere della campagna)</div>
+    <div class="mini-form">
+      <button class="btn-ghost" data-act="gen" data-kind="names">Nomi</button>
+      <button class="btn-ghost" data-act="gen" data-kind="npc">Un NPC</button>
+      <button class="btn-ghost" data-act="gen" data-kind="hook">Gancio di trama</button>
+    </div>
+    <div id="gen-result"></div>`;
+}
+
+$('#tools-body').addEventListener('click', async (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'oracle') {
+    const question = $('[data-f="oracle-q"]').value.trim();
+    if (!question) return toast('Fai una domanda.', true);
+    const likelihood = $('[data-f="oracle-like"]').value;
+    try {
+      const a = await jf('/admin/api/tools/oracle', { method: 'POST', body: { question, likelihood } });
+      $('#oracle-answer').innerHTML =
+        `<div class="oracle-answer ${ORACLE_CLASS[a.grade]}">${esc(a.answer)}</div>`;
+    } catch (err) { toast(err.message, true); }
+  } else if (act === 'gen') {
+    try {
+      const g = await jf(`/admin/api/campaigns/${campaignId}/tools/generate`,
+        { method: 'POST', body: { kind: b.dataset.kind } });
+      const list = g.items.map((it) => `<div class="gen-item">${esc(it)}</div>`).join('');
+      const createBtn = g.npc
+        ? `<button class="btn-ghost" data-act="gen-npc-create" data-name="${esc(g.npc.name)}">aggiungi «${esc(g.npc.name)}» alla campagna</button>`
+        : '';
+      $('#gen-result').innerHTML = `<div class="gen-list">${list}</div>${createBtn}`;
+    } catch (err) { toast(err.message, true); }
+  } else if (act === 'gen-npc-create') {
+    try {
+      state = await jf(`/admin/api/campaigns/${campaignId}/npcs`, { method: 'POST', body: { name: b.dataset.name } });
+      renderState();
+      loadStats();
+      toast('NPC aggiunto alla campagna.');
+    } catch (err) { toast(err.message, true); }
+  }
+});
+
+// ---- Statistiche ----
+async function loadStats() {
+  if (!campaignId) return;
+  try {
+    const s = await jf(`/admin/api/campaigns/${campaignId}/stats`);
+    renderStats(s);
+  } catch { /* campagna assente */ }
+}
+
+function renderStats(s) {
+  const o = s.outcomes || {};
+  const obj = s.objectives || {};
+  const rels = s.relationships.map((r) => {
+    const pct = Math.round((r.affinity + 100) / 2);
+    const cls = r.affinity >= 0 ? 'pos' : 'neg';
+    return `
+      <div class="rel-line">
+        <span class="small" style="min-width:100px">${esc(r.name)}</span>
+        <div class="aff-bar"><div class="aff-fill ${cls}" style="width:${pct}%"></div></div>
+        <span class="small" style="min-width:34px;text-align:right">${r.affinity > 0 ? '+' : ''}${r.affinity}</span>
+      </div>`;
+  }).join('') || '<span class="muted small">Nessun legame.</span>';
+
+  $('#stats-body').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat"><b>${s.turns}</b><span>turni giocati</span></div>
+      <div class="stat"><b>${s.npc_count}</b><span>NPC</span></div>
+      <div class="stat"><b>${s.memory_count}</b><span>ricordi</span></div>
+      <div class="stat"><b>${s.events_total}</b><span>eventi totali</span></div>
+    </div>
+    <div class="mini-label">Esiti delle prove</div>
+    <div class="kv">
+      <span class="chip"><span class="dot ok"></span> successi <span class="val">${o.success || 0}</span></span>
+      <span class="chip"><span class="dot warn"></span> riesci, ma <span class="val">${o.success_cost || 0}</span></span>
+      <span class="chip"><span class="dot bad"></span> fallimenti <span class="val">${o.failure || 0}</span></span>
+    </div>
+    <div class="mini-label">Obiettivi</div>
+    <div class="kv">
+      <span class="chip">aperti <span class="val">${obj.open || 0}</span></span>
+      <span class="chip">completati <span class="val">${obj.completed || 0}</span></span>
+      <span class="chip">falliti <span class="val">${obj.failed || 0}</span></span>
+    </div>
+    <div class="mini-label">Affinità con gli NPC <button class="btn-ghost" data-act="stats-refresh" style="float:right">aggiorna</button></div>
+    <div class="rows">${rels}</div>`;
+}
+
+$('#stats-body').addEventListener('click', (e) => {
+  if (e.target.closest('[data-act="stats-refresh"]')) loadStats();
 });
 
 // ============================================================

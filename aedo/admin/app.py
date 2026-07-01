@@ -20,6 +20,7 @@ from .routes_command import router as command_router
 from .routes_regia import router as regia_router
 from .routes_rules import router as rules_router
 from .routes_state import router as state_router
+from .routes_tools import router as tools_router
 from .services import build_supervisor
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -42,6 +43,7 @@ app.include_router(command_router)
 app.include_router(state_router)
 app.include_router(regia_router)
 app.include_router(rules_router)
+app.include_router(tools_router)
 
 
 @app.get("/health")

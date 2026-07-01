@@ -239,3 +239,49 @@ class BlueprintUpdate(BaseModel):
     special_rules: str | None = None
     dice_formula: str | None = None
     success_band: int | None = None
+
+
+# === Strumenti e statistiche ==============================================
+class OracleReq(BaseModel):
+    question: str
+    likelihood: str = "even"  # unlikely | even | likely
+
+
+class OracleOut(BaseModel):
+    question: str
+    likelihood: str
+    answer: str
+    grade: str
+
+
+class GenerateReq(BaseModel):
+    kind: str  # names | npc | hook
+
+
+class NpcSuggestion(BaseModel):
+    name: str
+    role: str
+    trait: str
+
+
+class GenerateOut(BaseModel):
+    kind: str
+    genre: str
+    items: list[str]
+    npc: NpcSuggestion | None = None
+
+
+class RelStat(BaseModel):
+    name: str
+    kind: str
+    affinity: int
+
+
+class StatsOut(BaseModel):
+    turns: int
+    events_total: int
+    outcomes: dict[str, int]
+    npc_count: int
+    memory_count: int
+    objectives: dict[str, int]
+    relationships: list[RelStat]
