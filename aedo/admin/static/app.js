@@ -179,25 +179,42 @@ async function refreshConsoles() {
 // ============================================================
 let campaignId = null;
 let state = null;
+let lastCampaignsJson = '';
 
+// Ricaricata all'avvio e ogni pochi secondi: così una campagna creata su Discord
+// mentre il Banco è aperto compare da sola, senza riavviare. Preserva la
+// campagna che stai guardando (non ti resetta i pannelli sotto le mani).
 async function loadCampaigns() {
   let camps = [];
   try {
     camps = await jf('/admin/api/campaigns');
   } catch {
-    toast('API dati non raggiungibile.', true);
+    if (!lastCampaignsJson) toast('Dati non raggiungibili.', true);
     return;
   }
+  const json = JSON.stringify(camps);
+  if (json === lastCampaignsJson) return;  // niente di nuovo: non toccare la UI
+  lastCampaignsJson = json;
+
   const sel = $('#campaign-select');
   if (!camps.length) {
     sel.innerHTML = '<option>nessuna campagna</option>';
     $('#state-empty').textContent = 'Nessuna campagna. Creane una su Discord con /nuova-campagna.';
+    $('#state-empty').hidden = false;
+    $('#state-panels').hidden = true;
+    campaignId = null;
     return;
   }
+  const prev = campaignId;
   sel.innerHTML = camps.map((c) =>
     `<option value="${c.id}">${esc(c.name)} — ${esc(c.genre)}</option>`).join('');
   sel.onchange = () => selectCampaign(Number(sel.value));
-  selectCampaign(camps[0].id);
+
+  // Mantieni la selezione corrente se esiste ancora; altrimenti prendi la prima.
+  const stillThere = camps.some((c) => c.id === prev);
+  const target = stillThere ? prev : camps[0].id;
+  sel.value = String(target);
+  if (target !== prev) selectCampaign(target);  // carica lo stato solo se cambia
 }
 
 async function selectCampaign(id) {
@@ -866,3 +883,4 @@ $('#stats-body').addEventListener('click', (e) => {
 loadServices();
 loadCampaigns();
 setInterval(loadServices, 2500);
+setInterval(loadCampaigns, 8000);  // fa comparire da sé le campagne appena create
