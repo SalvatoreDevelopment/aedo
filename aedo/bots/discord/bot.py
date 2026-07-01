@@ -22,7 +22,7 @@ from aedo.config import settings
 from aedo.core.narrator import get_narrator
 from aedo.storage import init_db
 from aedo.templates import list_templates
-from . import embeds, service
+from . import embeds, messages, service
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("aedo.bot")
@@ -66,6 +66,12 @@ class AedoBot(discord.Client):
 bot = AedoBot()
 
 
+async def _send_narration(channel, text: str) -> None:
+    """Invia una narrazione come testo normale, spezzandola se troppo lunga."""
+    for part in messages.chunks(text):
+        await channel.send(part)
+
+
 # --- Ponte con il Banco del Master: coda di regia -------------------------
 
 @tasks.loop(seconds=4.0)
@@ -89,7 +95,7 @@ async def regia_loop() -> None:
                 logger.warning("Canale %s non trovato per la regia", job.channel_id)
                 continue
         try:
-            await channel.send(embed=embeds.master_event_embed(job))
+            await _send_narration(channel, messages.master_event_text(job))
         except discord.HTTPException:
             logger.exception("Invio dell'evento di regia fallito")
 
@@ -171,7 +177,7 @@ async def nuova_campagna(
         except discord.HTTPException:
             pass
 
-    await channel.send(embed=embeds.opening_embed(dto))
+    await _send_narration(channel, messages.opening_text(dto))
     await interaction.followup.send(
         f"Campagna «{dto.campaign_name}» creata in {channel.mention} — scrivi lì per giocare.",
         ephemeral=True,
@@ -228,7 +234,7 @@ async def on_message(message: discord.Message) -> None:
             action=action,
         )
     if dto is not None:
-        await message.channel.send(embed=embeds.turn_embed(dto))
+        await _send_narration(message.channel, messages.turn_text(dto))
 
 
 def main() -> None:
