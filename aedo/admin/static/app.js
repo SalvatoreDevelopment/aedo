@@ -205,6 +205,7 @@ async function selectCampaign(id) {
   try {
     state = await jf(`/admin/api/campaigns/${id}/state`);
     renderState();
+    loadRegia();
   } catch (err) {
     toast(err.message, true);
   }
@@ -467,6 +468,127 @@ $('#npc-body').addEventListener('click', (e) => {
   const description = $('[data-f="npc-desc"]').value.trim();
   if (!name) return toast('Indica il nome dell\'NPC.', true);
   write(`${base()}/npcs`, 'POST', { name, description }, 'NPC creato.');
+});
+
+// ---- Regia narrativa ----
+let regia = null;
+let regiaTimer = null;
+const CMD_KIND = { inject_event: 'Evento diretto', narrate_event: 'Evento narrato da Aedo', override_last: 'Correzione esito' };
+const CMD_STATUS = { pending: '⏳ in coda', done: '✓ postato', error: '✕ errore' };
+const OUTCOME_LABEL = { success: 'successo', success_cost: 'riesci, ma…', failure: 'fallimento' };
+
+async function loadRegia() {
+  if (!campaignId) return;
+  try {
+    regia = await jf(`/admin/api/campaigns/${campaignId}/regia`);
+    renderRegia();
+  } catch { /* la campagna potrebbe non esistere più */ }
+}
+
+async function writeRegia(url, method, body, okMsg) {
+  try {
+    regia = await jf(url, { method, body });
+    renderRegia();
+    if (okMsg) toast(okMsg);
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+
+function renderRegia() {
+  if (!regia) return;
+  const r = regia;
+  const noChannel = !r.has_channel
+    ? `<div class="dep-hint">⚠ Questa campagna non ha un canale Discord: gli eventi non hanno dove essere postati (le note funzionano comunque).</div>`
+    : '';
+
+  // Override dell'ultima prova
+  let override;
+  if (r.last_event) {
+    const cur = r.last_event.outcome ? (OUTCOME_LABEL[r.last_event.outcome] || r.last_event.outcome) : '—';
+    override = `
+      <div class="mini-label">Correggi l'ultima prova (Aedo ri-narra)</div>
+      <div class="muted small">«${esc(r.last_event.action_text)}» — ora: <b>${esc(cur)}</b></div>
+      <div class="mini-form">
+        <button class="btn-ghost" data-act="override" data-o="success">successo</button>
+        <button class="btn-ghost" data-act="override" data-o="success_cost">riesci, ma…</button>
+        <button class="btn-ghost" data-act="override" data-o="failure">fallimento</button>
+      </div>`;
+  } else {
+    override = `<div class="mini-label">Correggi l'ultima prova</div><div class="muted small">Nessuna prova recente da correggere.</div>`;
+  }
+
+  // Coda comandi
+  const cmds = r.commands.length
+    ? r.commands.map((c) => `
+        <div class="cmd-row">
+          <span class="cmd-status ${esc(c.status)}">${CMD_STATUS[c.status] || c.status}</span>
+          <span class="cmd-kind">${CMD_KIND[c.kind] || c.kind}</span>
+          <span class="muted small cmd-payload">${esc((c.payload || '').slice(0, 70))}</span>
+          ${c.error ? `<span class="cmd-err">${esc(c.error)}</span>` : ''}
+        </div>`).join('')
+    : '<div class="muted small">Ancora nessun ordine di regia.</div>';
+
+  // Note segrete
+  const notes = r.notes.length
+    ? r.notes.map((n) => `
+        <div class="cmd-row">
+          <span class="small">${esc(n.text)}</span>
+          <button class="chip-x" data-act="note-del" data-id="${n.id}" style="margin-left:auto" title="Elimina nota">×</button>
+        </div>`).join('')
+    : '<div class="muted small">Nessuna nota.</div>';
+
+  $('#regia-body').innerHTML = `
+    ${noChannel}
+    <div class="regia-grid">
+      <div>
+        <div class="mini-label">Inietta un evento nel canale</div>
+        <textarea data-f="regia-text" rows="3" placeholder="Es. Le luci si spengono di colpo e un tuono scuote le finestre…" style="width:100%"></textarea>
+        <div class="mini-form">
+          <button class="btn-wax" data-act="event-narrated">Fai narrare ad Aedo</button>
+          <button class="btn-ghost" data-act="event-direct">Posta testuale</button>
+        </div>
+        ${override}
+      </div>
+      <div>
+        <div class="mini-label">Note segrete del master</div>
+        <div class="cmd-list">${notes}</div>
+        <div class="mini-form">
+          <input data-f="regia-note" placeholder="appunto privato…" style="flex:1" />
+          <button class="btn-ghost" data-act="note-add">aggiungi</button>
+        </div>
+      </div>
+    </div>
+    <div class="mini-label">Ordini recenti <button class="btn-ghost" data-act="regia-refresh" style="float:right">aggiorna</button></div>
+    <div class="cmd-list">${cmds}</div>`;
+
+  // Se ci sono ordini in coda, ricontrolla fra poco (il bot li esegue in ~4s).
+  clearTimeout(regiaTimer);
+  if (r.commands.some((c) => c.status === 'pending')) {
+    regiaTimer = setTimeout(loadRegia, 4000);
+  }
+}
+
+$('#regia-body').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  const act = b.dataset.act;
+  const rbase = `/admin/api/campaigns/${campaignId}`;
+  if (act === 'event-narrated' || act === 'event-direct') {
+    const text = $('[data-f="regia-text"]').value.trim();
+    if (!text) return toast('Scrivi l\'evento da mettere in scena.', true);
+    const mode = act === 'event-direct' ? 'direct' : 'narrated';
+    writeRegia(`${rbase}/regia/event`, 'POST', { mode, text }, 'Evento messo in coda per il canale.');
+  } else if (act === 'override') {
+    writeRegia(`${rbase}/regia/override`, 'POST', { outcome: b.dataset.o }, 'Correzione in coda: Aedo ri-narrerà.');
+  } else if (act === 'note-add') {
+    const text = $('[data-f="regia-note"]').value.trim();
+    if (!text) return;
+    writeRegia(`${rbase}/notes`, 'POST', { text }, 'Nota salvata.');
+  } else if (act === 'note-del') {
+    writeRegia(`${rbase}/notes/${b.dataset.id}`, 'DELETE', null, 'Nota eliminata.');
+  } else if (act === 'regia-refresh') {
+    loadRegia();
+  }
 });
 
 // ============================================================

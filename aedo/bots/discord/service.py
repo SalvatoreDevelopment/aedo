@@ -19,6 +19,7 @@ from aedo.core.services.campaign_service import (
     create_player_character,
 )
 from aedo.core.services.game_service import play_turn, start_campaign
+from aedo.core.services.regia import RegiaJob, run_pending
 from aedo.storage import SessionLocal
 
 # Servizio di memoria condiviso (embedder locale, caricato pigramente al
@@ -193,6 +194,19 @@ def get_inventory(channel_id: str) -> list[dict] | None:
             {"name": it.name, "quantity": it.quantity, "description": it.description}
             for it in pc.items
         ]
+
+
+def take_regia_jobs(narrator: NarratorProvider) -> list[RegiaJob]:
+    """Esegue i comandi di regia in coda e restituisce cosa postare nei canali.
+
+    Chiamata periodicamente dal bot (in un thread): fa il lavoro sul DB — incluse
+    le eventuali chiamate al narratore — e torna DTO di soli primitivi, così il
+    bot deve solo inviare gli embed.
+    """
+    with SessionLocal() as session:
+        jobs = run_pending(session, narrator)
+        session.commit()
+        return jobs
 
 
 def get_objectives(channel_id: str) -> list[dict] | None:

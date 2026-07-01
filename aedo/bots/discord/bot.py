@@ -16,6 +16,7 @@ import re
 
 import discord
 from discord import app_commands
+from discord.ext import tasks
 
 from aedo.config import settings
 from aedo.core.narrator import get_narrator
@@ -58,9 +59,44 @@ class AedoBot(discord.Client):
 
     async def on_ready(self) -> None:
         logger.info("Aedo è online come %s", self.user)
+        if not regia_loop.is_running():
+            regia_loop.start()
 
 
 bot = AedoBot()
+
+
+# --- Ponte con il Banco del Master: coda di regia -------------------------
+
+@tasks.loop(seconds=4.0)
+async def regia_loop() -> None:
+    """Esegue periodicamente gli ordini di regia accodati dal Banco.
+
+    Il lavoro sul DB (incluse le chiamate al narratore) gira in un thread; qui
+    restano solo gli invii nel canale.
+    """
+    try:
+        jobs = await asyncio.to_thread(service.take_regia_jobs, bot.narrator)
+    except Exception:
+        logger.exception("Errore nel leggere la coda di regia")
+        return
+    for job in jobs:
+        channel = bot.get_channel(int(job.channel_id))
+        if channel is None:
+            try:
+                channel = await bot.fetch_channel(int(job.channel_id))
+            except discord.HTTPException:
+                logger.warning("Canale %s non trovato per la regia", job.channel_id)
+                continue
+        try:
+            await channel.send(embed=embeds.master_event_embed(job))
+        except discord.HTTPException:
+            logger.exception("Invio dell'evento di regia fallito")
+
+
+@regia_loop.before_loop
+async def _before_regia_loop() -> None:
+    await bot.wait_until_ready()
 
 
 # --- Slash commands -------------------------------------------------------

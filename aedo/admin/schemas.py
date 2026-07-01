@@ -7,6 +7,8 @@ scrittura lavora per id — e ci sono i modelli di **richiesta** per le modifich
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -159,3 +161,50 @@ class CharacterUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     attributes: dict[str, int] | None = None
+
+
+# === Regia narrativa ======================================================
+class RegiaEventReq(BaseModel):
+    mode: str = "narrated"  # "direct" (testo così com'è) | "narrated" (lo narra Aedo)
+    text: str
+
+
+class RegiaOverrideReq(BaseModel):
+    outcome: str  # success | success_cost | failure
+
+
+class NoteReq(BaseModel):
+    text: str
+
+
+class NoteOut(BaseModel):
+    id: int
+    text: str
+    created_at: datetime
+
+
+class CommandOut(BaseModel):
+    id: int
+    kind: str
+    status: str
+    payload: str
+    result_narration: str
+    error: str
+    created_at: datetime
+    processed_at: datetime | None
+
+
+class LastEventOut(BaseModel):
+    id: int
+    action_text: str
+    outcome: str | None
+
+
+class RegiaState(BaseModel):
+    """Tutto ciò che serve al pannello di regia in una risposta."""
+
+    campaign_id: int
+    has_channel: bool
+    last_event: LastEventOut | None
+    commands: list[CommandOut]
+    notes: list[NoteOut]

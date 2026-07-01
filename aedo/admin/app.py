@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 
 from aedo.storage import init_db
 from .routes_command import router as command_router
+from .routes_regia import router as regia_router
 from .routes_state import router as state_router
 from .services import build_supervisor
 
@@ -38,6 +39,7 @@ app = FastAPI(title="Aedo — Banco del Master", version="0.1.0", lifespan=lifes
 
 app.include_router(command_router)
 app.include_router(state_router)
+app.include_router(regia_router)
 
 
 @app.get("/health")
