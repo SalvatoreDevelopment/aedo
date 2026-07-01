@@ -13,12 +13,15 @@ from .character import Character
 from .enums import (
     CampaignMode,
     CampaignStatus,
+    CommandKind,
+    CommandStatus,
     CrunchLevel,
     ObjectiveStatus,
     Outcome,
 )
 from .event import EventLog
 from .item import Item
+from .master import MasterCommand, MasterNote
 from .memory import Memory
 from .objective import Objective
 from .relationship import Relationship
@@ -34,8 +37,12 @@ __all__ = [
     "Objective",
     "Memory",
     "EventLog",
+    "MasterCommand",
+    "MasterNote",
     "CampaignMode",
     "CampaignStatus",
+    "CommandKind",
+    "CommandStatus",
     "CrunchLevel",
     "ObjectiveStatus",
     "Outcome",

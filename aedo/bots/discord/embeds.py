@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import discord
 
+from aedo.core.services.regia import RegiaJob
+
 from .service import NewCampaignDTO, SheetDTO, TurnDTO
 
 # Icona del progetto, servita dal repo pubblico (per author/thumbnail).
@@ -69,6 +71,18 @@ def turn_embed(dto: TurnDTO) -> discord.Embed:
     if dto.roll_summary and dto.outcome:
         label = _OUTCOME_LABEL.get(dto.outcome, dto.outcome)
         embed.add_field(name="🎲 Prova", value=f"{dto.roll_summary} — **{label}**", inline=False)
+    return embed
+
+
+def master_event_embed(job: RegiaJob) -> discord.Embed:
+    """Embed per un evento di regia iniettato dal master nel canale."""
+    color = _OUTCOME_COLOR.get(job.outcome or "") or genre_color(job.genre)
+    title = "🎭 Il destino si riscrive" if job.kind == "override_last" else "🎭 Colpo di scena"
+    embed = discord.Embed(title=title, description=job.narration, color=color)
+    embed.set_author(name=AUTHOR_NAME, icon_url=ICON_URL)
+    if job.outcome:
+        label = _OUTCOME_LABEL.get(job.outcome, job.outcome)
+        embed.add_field(name="🎲 Nuovo esito", value=f"**{label}**", inline=False)
     return embed
 
 

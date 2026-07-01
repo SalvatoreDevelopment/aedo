@@ -53,6 +53,12 @@ class Campaign(Base, IdMixin, TimestampMixin):
     events: Mapped[list["EventLog"]] = relationship(  # noqa: F821
         back_populates="campaign", cascade="all, delete-orphan"
     )
+    master_commands: Mapped[list["MasterCommand"]] = relationship(  # noqa: F821
+        back_populates="campaign", cascade="all, delete-orphan"
+    )
+    master_notes: Mapped[list["MasterNote"]] = relationship(  # noqa: F821
+        back_populates="campaign", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Campaign {self.name!r} ({self.mode.value})>"
