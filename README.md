@@ -134,6 +134,25 @@ python -m aedo.api                          # API su http://127.0.0.1:8000
 cd aedo/web && npm install && npm run dev   # dashboard su http://localhost:5173
 ```
 
+**Banco del Master** (app desktop di regia, gira in locale):
+
+Il "banco del Game Master" è un'**applicazione desktop nativa** (una finestra
+Windows tutta sua, non il browser) separata dalla dashboard giocatore: vede tutto
+(anche gli NPC), può **correggere lo stato a mano** (risorse, inventario,
+relazioni, obiettivi, NPC) e fa da **quadro di comando** — accende e spegne bot,
+API e web giocatore senza aprire tre terminali.
+
+Su Windows: doppio click su **`Banco-del-Master.bat`** (o, per vedere gli errori,
+`Banco-del-Master-debug.bat`). Da riga di comando:
+
+```bash
+pip install -e ".[admin]"   # fastapi + uvicorn + pywebview
+python -m aedo.admin         # apre la finestra del Banco
+```
+
+La finestra usa il motore Edge (WebView2) già presente in Windows 11; la stessa
+interfaccia è servita da un piccolo server locale sulla porta 8100.
+
 ## Test
 
 ```bash

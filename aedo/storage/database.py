@@ -26,10 +26,20 @@ SessionLocal = sessionmaker(bind=engine, expire_on_commit=False, future=True)
 
 
 @event.listens_for(engine, "connect")
-def _enable_sqlite_fk(dbapi_connection, _record) -> None:
-    """SQLite non applica le foreign key di default: attiviamole."""
+def _tune_sqlite(dbapi_connection, _record) -> None:
+    """Impostazioni per-connessione di SQLite.
+
+    * ``foreign_keys=ON`` — SQLite non applica le FK di default.
+    * ``journal_mode=WAL`` — ora due processi scrivono sullo stesso db (il bot
+      che gioca e il Banco del Master che corregge lo stato): il WAL consente
+      letture concorrenti mentre uno scrive, senza bloccare tutto.
+    * ``busy_timeout`` — se il db è momentaneamente occupato, aspetta invece di
+      fallire subito con "database is locked".
+    """
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA busy_timeout=5000")
     cursor.close()
 
 

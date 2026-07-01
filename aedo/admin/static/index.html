@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Il Banco del Master — Aedo</title>
+  <link rel="icon" href="/static/favicon.png" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="table">
+
+    <!-- Intestazione: targa d'ottone + candela -->
+    <header class="masthead">
+      <div class="candle" aria-hidden="true">
+        <div class="flame"></div>
+        <div class="stick"></div>
+      </div>
+      <div class="plate">
+        <h1>Il Banco del Master</h1>
+        <p class="subtitle">Aedo · regia e controllo della campagna</p>
+      </div>
+    </header>
+
+    <!-- ============ QUADRO DI COMANDO ============ -->
+    <section class="panel panel-wood" id="command">
+      <h2 class="panel-title">⚙ Quadro di Comando</h2>
+      <p class="panel-hint">Accendi e spegni i servizi. Da qui, non più tre terminali aperti a mano.</p>
+      <div class="services" id="services"><!-- popolato da app.js --></div>
+    </section>
+
+    <!-- ============ CONTROLLO DELLO STATO ============ -->
+    <section class="panel panel-felt" id="control">
+      <div class="control-head">
+        <h2 class="panel-title">🎲 Controllo dello Stato</h2>
+        <div class="campaign-picker">
+          <label for="campaign-select">Campagna</label>
+          <select id="campaign-select"><option>—</option></select>
+        </div>
+      </div>
+
+      <div id="state-body">
+        <p class="empty-note" id="state-empty">Seleziona una campagna per amministrarne lo stato.</p>
+
+        <div id="state-panels" class="state-grid" hidden>
+          <article class="felt-card" id="card-characters">
+            <h3>👤 Personaggi</h3>
+            <div class="card-body" id="characters-body"></div>
+          </article>
+
+          <article class="felt-card" id="card-inventory">
+            <h3>🎒 Inventario</h3>
+            <div class="card-body" id="inventory-body"></div>
+          </article>
+
+          <article class="felt-card" id="card-relationships">
+            <h3>❤ Relazioni</h3>
+            <div class="card-body" id="relationships-body"></div>
+          </article>
+
+          <article class="felt-card" id="card-objectives">
+            <h3>🎯 Obiettivi</h3>
+            <div class="card-body" id="objectives-body"></div>
+          </article>
+
+          <article class="felt-card wide" id="card-npc">
+            <h3>➕ Nuovo personaggio non giocante</h3>
+            <div class="card-body" id="npc-body"></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <footer class="table-foot">
+      <span id="toast" class="toast" hidden></span>
+      <span class="muted">Banco del Master · gira in locale · Tappa A</span>
+    </footer>
+  </div>
+
+  <!-- Finestra grande dei log (overlay) -->
+  <div id="log-modal" class="modal" hidden>
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 id="log-modal-title">Log</h3>
+        <div class="modal-actions">
+          <label class="autoscroll"><input type="checkbox" id="log-autoscroll" checked /> segui</label>
+          <button class="btn-ghost" id="log-copy">copia</button>
+          <button class="btn-ghost" id="log-close">chiudi ✕</button>
+        </div>
+      </div>
+      <pre class="console-big" id="log-modal-body"></pre>
+    </div>
+  </div>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>
