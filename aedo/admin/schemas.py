@@ -208,3 +208,34 @@ class RegiaState(BaseModel):
     last_event: LastEventOut | None
     commands: list[CommandOut]
     notes: list[NoteOut]
+
+
+# === Editor regole / genere (Blueprint) ===================================
+class BlueprintOut(BaseModel):
+    name: str
+    genre: str
+    tone: str
+    narrator_persona: str
+    crunch_level: str
+    crunch_options: list[str]
+    attributes: list[AttributeDef]
+    conflict_types: list[str]
+    default_resources: dict[str, int]
+    special_rules: str
+    dice_formula: str
+    success_band: int
+    ai_model: str  # modello AI in uso (informativo)
+
+
+class BlueprintUpdate(BaseModel):
+    name: str | None = None
+    genre: str | None = None
+    tone: str | None = None
+    narrator_persona: str | None = None
+    crunch_level: str | None = None
+    attributes: list[AttributeDef] | None = None
+    conflict_types: list[str] | None = None
+    default_resources: dict[str, int] | None = None
+    special_rules: str | None = None
+    dice_formula: str | None = None
+    success_band: int | None = None

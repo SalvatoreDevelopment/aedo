@@ -206,6 +206,7 @@ async function selectCampaign(id) {
     state = await jf(`/admin/api/campaigns/${id}/state`);
     renderState();
     loadRegia();
+    loadBlueprint();
   } catch (err) {
     toast(err.message, true);
   }
@@ -588,6 +589,164 @@ $('#regia-body').addEventListener('click', (e) => {
     writeRegia(`${rbase}/notes/${b.dataset.id}`, 'DELETE', null, 'Nota eliminata.');
   } else if (act === 'regia-refresh') {
     loadRegia();
+  }
+});
+
+// ---- Editor regole e genere (Blueprint) ----
+let blueprint = null;
+const CRUNCH_LABEL = {
+  narrative: 'Narrativo — meccaniche nascoste',
+  balanced: 'Bilanciato — qualche numero',
+  tactical: 'Tattico — numeri e tiri in vista',
+};
+
+async function loadBlueprint() {
+  if (!campaignId) return;
+  try {
+    blueprint = await jf(`/admin/api/campaigns/${campaignId}/blueprint`);
+    renderBlueprint();
+  } catch { /* campagna assente */ }
+}
+
+async function writeBlueprint(patch, okMsg) {
+  try {
+    blueprint = await jf(`/admin/api/campaigns/${campaignId}/blueprint`, { method: 'PATCH', body: patch });
+    renderBlueprint();
+    if (okMsg) toast(okMsg);
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+
+function readAttributes() {
+  return [...document.querySelectorAll('#blueprint-body .attr-row')].map((row) => ({
+    name: row.querySelector('[data-k="aname"]').value.trim(),
+    description: row.querySelector('[data-k="adesc"]').value.trim(),
+  })).filter((a) => a.name);
+}
+
+function readResources() {
+  const out = {};
+  document.querySelectorAll('#blueprint-body .res-row').forEach((row) => {
+    const name = row.querySelector('[data-k="rname"]').value.trim();
+    const val = Number(row.querySelector('[data-k="rval"]').value) || 0;
+    if (name) out[name] = Math.max(0, val);
+  });
+  return out;
+}
+
+function renderBlueprint() {
+  if (!blueprint) return;
+  const bp = blueprint;
+  const crunchOpts = bp.crunch_options.map((c) =>
+    `<option value="${c}" ${c === bp.crunch_level ? 'selected' : ''}>${esc(CRUNCH_LABEL[c] || c)}</option>`).join('');
+  const attrs = bp.attributes.map((a, i) => `
+    <div class="attr-row">
+      <input data-k="aname" value="${esc(a.name)}" placeholder="attributo" data-bp="attributes" />
+      <input data-k="adesc" value="${esc(a.description || '')}" placeholder="a cosa serve" data-bp="attributes" style="flex:1" />
+      <button class="chip-x" data-act="attr-del" data-i="${i}" title="Rimuovi">×</button>
+    </div>`).join('') || '<div class="muted small">Nessun attributo.</div>';
+  const resources = Object.entries(bp.default_resources).map(([k, v]) => `
+    <div class="res-row">
+      <input data-k="rname" value="${esc(k)}" placeholder="risorsa" data-bp="default_resources" style="flex:1" />
+      <input data-k="rval" type="number" value="${v}" class="small" data-bp="default_resources" />
+      <button class="chip-x" data-act="res-del" data-k="${esc(k)}" title="Rimuovi">×</button>
+    </div>`).join('') || '<div class="muted small">Nessuna risorsa.</div>';
+  const conflicts = bp.conflict_types.map((c, i) => `
+    <span class="chip">${esc(c)}
+      <button class="chip-x" data-act="conf-del" data-i="${i}">×</button>
+    </span>`).join('') || '<span class="muted small">Nessuno.</span>';
+
+  $('#blueprint-body').innerHTML = `
+    <div class="bp-grid">
+      <label class="bp-field"><span>Nome del ruleset</span>
+        <input data-bp="name" value="${esc(bp.name)}" /></label>
+      <label class="bp-field"><span>Genere e ambientazione</span>
+        <input data-bp="genre" value="${esc(bp.genre)}" /></label>
+      <label class="bp-field"><span>Tono / voce</span>
+        <input data-bp="tone" value="${esc(bp.tone)}" /></label>
+      <label class="bp-field"><span>Meccaniche visibili</span>
+        <select data-bp="crunch_level">${crunchOpts}</select></label>
+      <label class="bp-field"><span>Dado base (es. 2d6, 1d20)</span>
+        <input data-bp="dice_formula" value="${esc(bp.dice_formula)}" /></label>
+      <label class="bp-field"><span>Fascia "riesci, ma…"</span>
+        <input data-bp="success_band" type="number" min="0" value="${bp.success_band}" /></label>
+    </div>
+    <label class="bp-field"><span>Come recita Aedo (persona del narratore)</span>
+      <textarea data-bp="narrator_persona" rows="2">${esc(bp.narrator_persona)}</textarea></label>
+    <label class="bp-field"><span>Regole speciali (in italiano, le legge Aedo)</span>
+      <textarea data-bp="special_rules" rows="2">${esc(bp.special_rules)}</textarea></label>
+
+    <div class="mini-label">Attributi</div>
+    <div class="bp-list">${attrs}</div>
+    <div class="mini-form">
+      <input data-f="new-attr-name" placeholder="nuovo attributo" />
+      <input data-f="new-attr-desc" placeholder="descrizione" style="flex:1" />
+      <button class="btn-ghost" data-act="attr-add">aggiungi</button>
+    </div>
+
+    <div class="mini-label">Risorse di partenza dei personaggi</div>
+    <div class="bp-list">${resources}</div>
+    <div class="mini-form">
+      <input data-f="new-res-name" placeholder="risorsa (es. vita)" />
+      <input data-f="new-res-val" type="number" value="5" class="small" />
+      <button class="btn-ghost" data-act="res-add">aggiungi</button>
+    </div>
+
+    <div class="mini-label">Tipi di conflitto</div>
+    <div class="kv">${conflicts}</div>
+    <div class="mini-form">
+      <input data-f="new-conf" placeholder="es. inseguimento" />
+      <button class="btn-ghost" data-act="conf-add">aggiungi</button>
+    </div>
+
+    <div class="mini-label">Modello AI (narratore)</div>
+    <div class="muted small">In uso: <code>${esc(bp.ai_model)}</code> — si cambia nel file <code>.env</code> (AEDO_MODEL) e vale al riavvio del bot.</div>`;
+}
+
+// Salvataggio dei campi scalari al blur/change.
+$('#blueprint-body').addEventListener('change', (e) => {
+  const f = e.target.closest('[data-bp]');
+  if (!f) return;
+  const field = f.dataset.bp;
+  if (field === 'attributes') {
+    writeBlueprint({ attributes: readAttributes() });
+  } else if (field === 'default_resources') {
+    writeBlueprint({ default_resources: readResources() });
+  } else if (field === 'success_band') {
+    writeBlueprint({ success_band: Number(f.value) || 0 });
+  } else {
+    writeBlueprint({ [field]: f.value });
+  }
+});
+
+$('#blueprint-body').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'attr-add') {
+    const name = $('[data-f="new-attr-name"]').value.trim();
+    if (!name) return toast('Indica il nome dell\'attributo.', true);
+    const desc = $('[data-f="new-attr-desc"]').value.trim();
+    writeBlueprint({ attributes: [...blueprint.attributes, { name, description: desc }] }, 'Attributo aggiunto.');
+  } else if (act === 'attr-del') {
+    const next = blueprint.attributes.filter((_, i) => i !== Number(b.dataset.i));
+    writeBlueprint({ attributes: next });
+  } else if (act === 'res-add') {
+    const name = $('[data-f="new-res-name"]').value.trim();
+    if (!name) return toast('Indica il nome della risorsa.', true);
+    const val = Math.max(0, Number($('[data-f="new-res-val"]').value) || 0);
+    writeBlueprint({ default_resources: { ...blueprint.default_resources, [name]: val } }, 'Risorsa aggiunta.');
+  } else if (act === 'res-del') {
+    const next = { ...blueprint.default_resources };
+    delete next[b.dataset.k];
+    writeBlueprint({ default_resources: next });
+  } else if (act === 'conf-add') {
+    const c = $('[data-f="new-conf"]').value.trim();
+    if (!c) return;
+    writeBlueprint({ conflict_types: [...blueprint.conflict_types, c] }, 'Aggiunto.');
+  } else if (act === 'conf-del') {
+    const next = blueprint.conflict_types.filter((_, i) => i !== Number(b.dataset.i));
+    writeBlueprint({ conflict_types: next });
   }
 });
 

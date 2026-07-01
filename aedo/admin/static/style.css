@@ -344,6 +344,17 @@ input.small { width: 62px; }
 #regia-body textarea { font-family: var(--sans); resize: vertical; }
 @media (max-width: 720px) { .regia-grid { grid-template-columns: 1fr; } }
 
+/* ---------- Editor regole / Blueprint ---------- */
+.bp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 16px; }
+.bp-field { display: flex; flex-direction: column; gap: 3px; margin: 8px 0; }
+.bp-field > span { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: #7a6444; }
+.bp-field input, .bp-field select, .bp-field textarea { width: 100%; }
+#blueprint-body textarea { font-family: var(--sans); resize: vertical; }
+.bp-list { display: flex; flex-direction: column; gap: 5px; margin: 4px 0; }
+.attr-row, .res-row { display: flex; align-items: center; gap: 6px; }
+.attr-row input[data-k="aname"] { width: 130px; }
+@media (max-width: 720px) { .bp-grid { grid-template-columns: 1fr; } }
+
 @media (max-width: 720px) {
   .state-grid { grid-template-columns: 1fr; }
   .plate h1 { font-size: 23px; }
