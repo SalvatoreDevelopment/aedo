@@ -194,6 +194,7 @@ body {
 }
 .campaign-picker { display: flex; align-items: center; gap: 8px; }
 .campaign-picker label { color: var(--parchment-2); font-size: 13px; letter-spacing: 0.04em; }
+#delete-campaign { flex: none; white-space: nowrap; }
 
 select, input, textarea {
   background: var(--parchment); color: var(--ink);
