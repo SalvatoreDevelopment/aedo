@@ -1,32 +1,19 @@
-"""Costruzione degli embed Discord a partire dai DTO del service.
+"""Embed Discord per le schede di consultazione (scheda, inventario, obiettivi).
 
-Solo presentazione: il colore segue il genere della campagna, l'esito del tiro
-è messo in evidenza, e il narratore si "firma" con la lira di Aedo.
+Solo presentazione di *dati*: qui gli embed hanno senso, perché sono tabelle.
+Quando invece Aedo **racconta** (apertura, turni, regia) il bot scrive testo
+normale in chat — vedi ``messages.py``.
 """
 
 from __future__ import annotations
 
 import discord
 
-from aedo.core.services.regia import RegiaJob
-
-from .service import NewCampaignDTO, SheetDTO, TurnDTO
+from .service import SheetDTO
 
 # Icona del progetto, servita dal repo pubblico (per author/thumbnail).
 ICON_URL = "https://raw.githubusercontent.com/SalvatoreDevelopment/aedo/main/assets/aedo_256.png"
 AUTHOR_NAME = "Aedo · il cantastorie"
-
-# Colore dell'esito del tiro (ha la precedenza quando c'è una prova).
-_OUTCOME_COLOR = {
-    "success": discord.Color.from_str("#3ba55d"),
-    "success_cost": discord.Color.from_str("#e0a93f"),
-    "failure": discord.Color.from_str("#d4537e"),
-}
-_OUTCOME_LABEL = {
-    "success": "successo",
-    "success_cost": "riesci, ma…",
-    "failure": "fallimento",
-}
 _AEDO_COLOR = discord.Color.from_str("#9b8cce")
 
 
@@ -42,48 +29,6 @@ def genre_color(genre: str) -> discord.Color:
     if any(k in g for k in ("horror", "incub", "terrore", "gotic", "soprannatur")):
         return discord.Color.from_str("#8b2f3a")   # rosso scuro
     return _AEDO_COLOR
-
-
-def _attrs_line(attributes: dict[str, int]) -> str:
-    return " · ".join(f"**{k}** {v}" for k, v in attributes.items()) or "—"
-
-
-def _resources_line(resources: dict[str, int]) -> str:
-    return "   ".join(f"{k} `{v}`" for k, v in resources.items()) or "—"
-
-
-def opening_embed(dto: NewCampaignDTO) -> discord.Embed:
-    embed = discord.Embed(
-        title=dto.campaign_name, description=dto.opening, color=genre_color(dto.genre)
-    )
-    embed.set_author(name=AUTHOR_NAME, icon_url=ICON_URL)
-    embed.set_thumbnail(url=ICON_URL)
-    embed.add_field(name=f"👤 {dto.character_name}", value=_attrs_line(dto.attributes), inline=False)
-    if dto.resources:
-        embed.add_field(name="Risorse", value=_resources_line(dto.resources), inline=False)
-    embed.set_footer(text=f"{dto.genre}  ·  scrivi cosa fai per giocare")
-    return embed
-
-
-def turn_embed(dto: TurnDTO) -> discord.Embed:
-    color = _OUTCOME_COLOR.get(dto.outcome) or genre_color(dto.genre)
-    embed = discord.Embed(description=dto.narration, color=color)
-    if dto.roll_summary and dto.outcome:
-        label = _OUTCOME_LABEL.get(dto.outcome, dto.outcome)
-        embed.add_field(name="🎲 Prova", value=f"{dto.roll_summary} — **{label}**", inline=False)
-    return embed
-
-
-def master_event_embed(job: RegiaJob) -> discord.Embed:
-    """Embed per un evento di regia iniettato dal master nel canale."""
-    color = _OUTCOME_COLOR.get(job.outcome or "") or genre_color(job.genre)
-    title = "🎭 Il destino si riscrive" if job.kind == "override_last" else "🎭 Colpo di scena"
-    embed = discord.Embed(title=title, description=job.narration, color=color)
-    embed.set_author(name=AUTHOR_NAME, icon_url=ICON_URL)
-    if job.outcome:
-        label = _OUTCOME_LABEL.get(job.outcome, job.outcome)
-        embed.add_field(name="🎲 Nuovo esito", value=f"**{label}**", inline=False)
-    return embed
 
 
 def sheet_embed(dto: SheetDTO) -> discord.Embed:
