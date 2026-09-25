@@ -9,6 +9,7 @@ from aedo.core.narrator.parsing import (
     parse_narration,
     parse_turn,
 )
+from aedo.core.narrator.prompts import build_turn_messages
 
 
 def _ctx(action: str) -> NarratorContext:
@@ -122,6 +123,22 @@ def test_fake_assess_forced():
     nar = FakeNarrator(force_risky=True, attribute="Sangue freddo", difficulty="hard")
     a = nar.assess(_ctx("respiro"))
     assert a.is_risky and a.attribute == "Sangue freddo" and a.difficulty == "hard"
+
+
+def test_master_notes_enter_system_prompt_as_reserved():
+    """Le note segrete entrano nel prompt di sistema, marcate come riservate."""
+    ctx = _ctx("guardo il locandiere")
+    ctx.master_notes = ["il locandiere è il traditore"]
+    system = build_turn_messages(ctx)[0]["content"]
+    assert "il locandiere è il traditore" in system
+    assert "RISERVATA" in system                 # marcate come segrete
+    assert "non rivelarle" in system.lower()     # con divieto di rivelarle
+
+
+def test_no_master_notes_leaves_prompt_clean():
+    """Senza note, il prompt di sistema non guadagna righe: comportamento invariato."""
+    system = build_turn_messages(_ctx("guardo"))[0]["content"]
+    assert "RISERVATA" not in system
 
 
 def test_get_narrator_fake():

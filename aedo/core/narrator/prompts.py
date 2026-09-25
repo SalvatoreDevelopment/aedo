@@ -22,6 +22,13 @@ def _persona_block(ctx: NarratorContext) -> str:
         parts.append(ctx.narrator_persona)
     if ctx.special_rules:
         parts.append(f"Regole speciali: {ctx.special_rules}")
+    if ctx.master_notes:
+        notes = "\n".join(f"  - {n}" for n in ctx.master_notes)
+        parts.append(
+            "Note segrete del master (conoscenza RISERVATA): non rivelarle né "
+            "citarle mai ai giocatori; usale solo per orientare cosa accade, cosa i "
+            "PNG sanno e fanno, e dove piega la storia.\n" + notes
+        )
     parts.append("Scrivi sempre in italiano, in seconda persona, immerso nella scena.")
     return "\n".join(parts)
 

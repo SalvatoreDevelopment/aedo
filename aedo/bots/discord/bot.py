@@ -55,7 +55,17 @@ class AedoBot(discord.Client):
 
     async def setup_hook(self) -> None:
         init_db()
-        await self.tree.sync()
+        # In sviluppo, sincronizza su un singolo server: è istantaneo. In
+        # produzione (guild id vuoto) i comandi sono globali: si aggiornano
+        # ovunque, ma Discord può metterci fino a ~1 ora a propagarli.
+        if settings.discord_guild_id:
+            guild = discord.Object(id=int(settings.discord_guild_id))
+            self.tree.copy_global_to(guild=guild)
+            await self.tree.sync(guild=guild)
+            logger.info("Slash command sincronizzati sul server %s (istantaneo).", settings.discord_guild_id)
+        else:
+            await self.tree.sync()
+            logger.info("Slash command sincronizzati globalmente (propagazione fino a ~1 ora).")
 
     async def on_ready(self) -> None:
         logger.info("Aedo è online come %s", self.user)
@@ -133,6 +143,7 @@ _TEMPLATE_CHOICES = [
 @app_commands.describe(
     template="Il genere di partenza",
     personaggio="Nome del tuo personaggio",
+    descrizione="(facoltativo) chi è: aspetto, genere, indole, morale, cosa lo muove — Aedo ne terrà conto",
     nome="(facoltativo) nome della campagna; se lo lasci vuoto lo sceglie Aedo",
     spunto="(facoltativo) un'idea o tema per l'incipit",
 )
@@ -141,6 +152,7 @@ async def nuova_campagna(
     interaction: discord.Interaction,
     template: app_commands.Choice[str],
     personaggio: str,
+    descrizione: str = "",
     nome: str = "",
     spunto: str = "",
 ) -> None:
@@ -177,6 +189,7 @@ async def nuova_campagna(
             template=template.value,
             campaign_name=nome,
             character_name=personaggio,
+            description=descrizione,
             premise=spunto,
         )
     except Exception:

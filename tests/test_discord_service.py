@@ -8,13 +8,13 @@ vedono lo stesso database.
 from __future__ import annotations
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from aedo.bots.discord import service
 from aedo.core.memory import FakeEmbedder, MemoryService
-from aedo.core.models import Base
+from aedo.core.models import Base, Character
 from aedo.core.narrator import FakeNarrator
 
 
@@ -60,6 +60,30 @@ def test_create_campaign_without_name_gets_auto_title(bot_db):
     )
     assert dto.campaign_name.strip()           # nome generato, non vuoto
     assert "Sam" in dto.campaign_name          # dal titolo proposto dal narratore
+
+
+def test_create_campaign_persists_character_description(bot_db):
+    """La descrizione facoltativa arriva fino al personaggio (e quindi ad Aedo)."""
+    service.create_campaign_in_channel(
+        FakeNarrator(),
+        channel_id="cDesc", guild_id="g1", owner_discord_id="u1",
+        template="noir", campaign_name="Caso chiuso", character_name="Nadia",
+        description="una detective disillusa, lei/lei; non tradisce mai un cliente",
+    )
+    with service.SessionLocal() as session:
+        pc = session.scalar(select(Character).where(Character.discord_id == "u1"))
+        assert pc is not None
+        assert "detective disillusa" in pc.description
+        assert "lei/lei" in pc.description
+
+
+def test_create_campaign_description_defaults_empty(bot_db):
+    """Senza descrizione il campo resta vuoto: il prompt di Aedo è invariato."""
+    _new_campaign(channel_id="cEmpty")
+    with service.SessionLocal() as session:
+        pc = session.scalar(select(Character).where(Character.discord_id == "u1"))
+        assert pc is not None
+        assert pc.description == ""
 
 
 def test_run_turn_in_channel(bot_db):

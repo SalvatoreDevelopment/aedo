@@ -9,6 +9,8 @@ from sqlalchemy.pool import StaticPool
 
 from aedo.core.models import (
     Base,
+    Campaign,
+    Character,
     CommandKind,
     CommandStatus,
     EventLog,
@@ -21,6 +23,7 @@ from aedo.core.services.campaign_service import (
     create_campaign_from_template,
     create_player_character,
 )
+from aedo.core.services.game_service import build_context
 
 
 @pytest.fixture()
@@ -137,3 +140,16 @@ def test_notes_crud(db):
         s.commit()
     with TestSession() as s:
         assert regia.list_notes(s, cid) == []
+
+
+def test_master_notes_reach_narrator_context(db):
+    """La nota segreta arriva nel contesto passato ad Aedo (ma resta fuori dal canale)."""
+    TestSession, cid = db
+    with TestSession() as s:
+        regia.add_note(s, cid, "il locandiere è il traditore")
+        s.commit()
+    with TestSession() as s:
+        camp = s.get(Campaign, cid)
+        pc = s.scalar(select(Character).where(Character.campaign_id == cid))
+        ctx = build_context(s, camp, pc, action="guardo il locandiere")
+        assert "il locandiere è il traditore" in ctx.master_notes

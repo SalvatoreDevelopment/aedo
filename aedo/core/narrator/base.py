@@ -48,6 +48,9 @@ class NarratorContext:
     # --- L'input del giocatore ---
     player_action: str = ""
 
+    # --- Regia riservata del master (mai rivelata ai giocatori) ---
+    master_notes: list[str] = field(default_factory=list)
+
 
 @dataclass
 class Assessment:

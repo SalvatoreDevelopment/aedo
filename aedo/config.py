@@ -25,6 +25,10 @@ class Settings(BaseSettings):
 
     # --- Bot Discord ---
     discord_token: str = ""
+    # ID del server (guild) per la sincronizzazione istantanea degli slash
+    # command in sviluppo. Se vuoto, i comandi sono globali (Discord può
+    # metterci fino a ~1 ora a propagarli).
+    discord_guild_id: str = ""
 
     # --- Database ---
     aedo_db_path: str = "data/aedo.db"

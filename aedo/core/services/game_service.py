@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from aedo.core.models import Campaign, Character, EventLog
+from aedo.core.models import Campaign, Character, EventLog, MasterNote
 from aedo.core.memory import MemoryService
 from aedo.core.narrator.base import Assessment, Narration, NarratorContext, NarratorProvider
 from aedo.core.resolution import Difficulty, ResolutionResult, resolve
@@ -54,6 +54,20 @@ def _recent_event_lines(session: Session, campaign: Campaign, limit: int = 5) ->
     return [r.narration for r in reversed(rows) if r.narration]
 
 
+def _master_note_lines(session: Session, campaign: Campaign) -> list[str]:
+    """Note segrete del master: conoscenza riservata che orienta Aedo.
+
+    Sono per il narratore, non per i giocatori: il prompt le marca come riservate
+    e gli vieta di rivelarle. Restano comunque invisibili nel canale Discord.
+    """
+    rows = session.scalars(
+        select(MasterNote)
+        .where(MasterNote.campaign_id == campaign.id)
+        .order_by(MasterNote.id)
+    ).all()
+    return [n.text for n in rows if n.text]
+
+
 def build_context(
     session: Session,
     campaign: Campaign,
@@ -81,6 +95,7 @@ def build_context(
         recent_events=_recent_event_lines(session, campaign),
         relevant_memories=relevant_memories or [],
         player_action=action,
+        master_notes=_master_note_lines(session, campaign),
     )
 
 

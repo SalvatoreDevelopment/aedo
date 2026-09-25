@@ -83,6 +83,7 @@ def create_campaign_in_channel(
     template: str,
     campaign_name: str,
     character_name: str,
+    description: str = "",
     premise: str = "",
 ) -> NewCampaignDTO:
     """Crea campagna + personaggio nel canale e genera la scena d'apertura."""
@@ -95,6 +96,7 @@ def create_campaign_in_channel(
         campaign.discord_guild_id = guild_id
         pc = create_player_character(
             session, campaign, name=character_name, discord_id=owner_discord_id,
+            description=description,
             attributes=_default_attributes(campaign.blueprint),
         )
         opening = start_campaign(
